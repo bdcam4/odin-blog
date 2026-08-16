@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+out/
+
+# Test and coverage output
+coverage/
+test-results/
+playwright-report/
+
+# Angular tooling
+.angular/
+.nx/
+
+# Runtime files
+*.log
+*.pid
+
+# Local databases and uploads
+*.sqlite
+*.sqlite3
+uploads/
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

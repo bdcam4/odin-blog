@@ -1,0 +1,19 @@
+node_modules/
+.pnpm-store/
+
+dist/
+build/
+out/
+coverage/
+.angular/
+.nx/
+playwright-report/
+test-results/
+
+.env*
+*.log
+*.sqlite
+*.sqlite3
+
+# Prisma migrations are tracked but should not be reformatted.
+apps/api/prisma/migrations/
