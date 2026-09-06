@@ -1,10 +1,19 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError, PROBLEM_TYPE_BASE, type ProblemDetails } from "../errors/app-error.js";
 
-// Single place where any failure becomes a HTTP response.
-// Identified as error middleware by its four-parameter signature;
-// runs only when something above it calls next(error) or throws.
-// err is unknown: JavaScript can throw anything.
+/**
+ * Terminal Express error middleware: converts any failure into an
+ * RFC 9457 problem details response.
+ *
+ * Must keep the 4-parameter signature — Express identifies error
+ * middleware by arity, so `_next` exists only to preserve it.
+ * Runs when something above it calls `next(error)` or throws.
+ *
+ * @param err - The thrown/rejected value. Typed `unknown` because
+ *   JavaScript can throw anything.
+ * @param _next - Unused; present for arity. Forwards `err` if
+ *   headers were already sent.
+ */
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
     // A response already started streaming; it cannot be replaced.
     if (res.headersSent) {
@@ -12,7 +21,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
         return;
     }
 
-    // Known application error: serialize the semantics the type carries.
+    // Known application error: convert it into a problem details body.
     if (err instanceof AppError) {
         const problem: ProblemDetails = {
             type: `${PROBLEM_TYPE_BASE}/${err.type}`,
