@@ -27,7 +27,7 @@ type InferSchema<TSchema extends z.ZodTypeAny | undefined> =
 
 // Builds the res.locals shape for this specific validateRequest(...) call
 // by mapping each provided schema to its inferred parsed type.
-type ValidatedLocals<TSchemas extends RequestSchemas> = {
+export type ValidatedLocals<TSchemas extends RequestSchemas> = {
     validated: ValidatedRequestData<
         InferSchema<TSchemas["params"]>,
         InferSchema<TSchemas["body"]>,

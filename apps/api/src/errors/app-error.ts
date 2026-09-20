@@ -75,3 +75,15 @@ export class ConflictError extends AppError {
         });
     }
 }
+
+export class UnauthorisedError extends AppError {
+    constructor(detail: string) {
+        super({
+            status: 401,
+            type: "unauthorised",
+            title: "Unauthorised",
+            code: "UNAUTHORISED",
+            detail,
+        });
+    }
+}

@@ -1,8 +1,8 @@
 import app from "./app.js";
-import "dotenv/config";
+import { env } from "./config/env.js";
 
-const PORT = parseInt(process.env.PORT || '3000', 10);
-app.listen(PORT, '0.0.0.0', (error) => {
+const PORT = env.PORT;
+app.listen(PORT, "0.0.0.0", (error) => {
     if (error) {
         throw error;
     }
