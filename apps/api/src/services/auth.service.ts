@@ -2,6 +2,7 @@ import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { hash, verify } from "argon2";
 import * as jose from "jose";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { ConflictError, UnauthorisedError } from "../errors/app-error.js";
 import type { RegisterInput, LoginInput } from "../schemas/auth.schema.js";
 import type { AuthUser } from "../types.js";
@@ -9,17 +10,16 @@ import type { AuthUser } from "../types.js";
 const DUMMY_HASH =
     "$argon2id$v=19$m=65536,p=4,t=3$NSFHQviYJ6o0RTAtCjchGw$FHvqLNUL57ORmuxEswGdTFSCP/q70QFrZJmmZjBrWSw";
 
-const ACCESS_TOKEN_TTL = 900; // 15m in seconds
+//const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+const ACCESS_TOKEN_TTL = "15m";
+const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
 
-async function signAccessToken(user: {
-    id: number;
-    email: string;
-    isAdmin: boolean;
-}) {
+async function signAccessToken(user: AuthUser, sid: string) {
     return await new jose.SignJWT({
         email: user.email,
         isAdmin: user.isAdmin,
         typ: "access",
+        sid,
     })
         .setProtectedHeader({ alg: "HS256" })
         .setSubject(String(user.id))
@@ -28,23 +28,10 @@ async function signAccessToken(user: {
         .sign(new TextEncoder().encode(env.JWT_ACCESS_SECRET));
 }
 
-async function signRefreshToken(user: { id: number }) {
-    return await new jose.SignJWT({ typ: "refresh" })
-        .setProtectedHeader({ alg: "HS256" })
-        .setSubject(String(user.id))
-        .setIssuedAt()
-        .setExpirationTime("30d")
-        .sign(new TextEncoder().encode(env.JWT_REFRESH_SECRET));
-}
-
-async function issueTokens(user: AuthUser) {
-    return {
-        user: { id: user.id, email: user.email },
-        accessToken: await signAccessToken(user),
-        refreshToken: await signRefreshToken(user),
-        tokenType: "Bearer",
-        expiresIn: ACCESS_TOKEN_TTL,
-    };
+function createRefreshToken() {
+    const token = randomBytes(32).toString("base64url");
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    return { token, tokenHash };
 }
 
 export async function register(body: RegisterInput) {
@@ -57,6 +44,7 @@ export async function register(body: RegisterInput) {
     const passwordHash = await hash(body.password, {
         secret: Buffer.from(env.PEPPER_SECRET),
     });
+
     return await prisma.user.create({
         data: {
             email: body.email,
@@ -83,30 +71,55 @@ export async function login(body: LoginInput) {
         throw new UnauthorisedError("Invalid email or password.");
     }
 
-    return await issueTokens(user);
+    const sid = randomUUID();
+    const refreshToken = createRefreshToken();
+    const accessToken = await signAccessToken(user, sid);
+
+    await prisma.session.create({
+        data: {
+            id: sid,
+            userId: user.id,
+            refreshTokenHash: refreshToken.tokenHash,
+            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000),
+        },
+    });
+
+    return {
+        user: { id: user.id, email: user.email },
+        accessToken,
+        refreshToken: refreshToken.token,
+        tokenType: "Bearer",
+        expiresIn: ACCESS_TOKEN_TTL,
+    };
 }
 
 export async function refresh(refreshToken: string) {
-    let payload: jose.JWTPayload;
-    try {
-        ({ payload } = await jose.jwtVerify(
-            refreshToken,
-            new TextEncoder().encode(env.JWT_REFRESH_SECRET),
-        ));
-    } catch {
-        throw new UnauthorisedError("Invalid or expired token.");
-    }
-
-    if (payload.typ !== "refresh") {
-        throw new UnauthorisedError("Invalid or expired token.");
-    }
-
-    const user = await prisma.user.findUnique({
-        where: { id: Number(payload.sub) },
+    const refreshTokenHash = createHash("sha256")
+        .update(refreshToken)
+        .digest("hex");
+    const session = await prisma.session.findUnique({
+        where: { refreshTokenHash },
+        include: { user: true },
     });
-    if (!user) {
+
+    if (!session) {
         throw new UnauthorisedError("Invalid or expired token.");
     }
 
-    return await issueTokens(user);
+    const user: AuthUser = {
+        id: session.user.id,
+        email: session.user.email,
+        isAdmin: session.user.isAdmin,
+    };
+
+    const accessToken = await signAccessToken(user, session.id);
+    const newRefreshToken = createRefreshToken();
+
+    return {
+        user,
+        accessToken,
+        refreshToken: newRefreshToken.token,
+        tokenType: "Bearer",
+        expiresIn: ACCESS_TOKEN_TTL,
+    };
 }
