@@ -62,8 +62,14 @@ function formatIssues(error: z.ZodError) {
  * @param schema - Zod schemas describing which request sections to validate
  * @returns Express middleware that validates the request and populates `res.locals.validated`
  */
-export function validateRequest<TSchemas extends RequestSchemas>(schema: TSchemas) {
-    return (req: Request, res: Response<any, ValidatedLocals<TSchemas>>, next: NextFunction) => {
+export function validateRequest<TSchemas extends RequestSchemas>(
+    schema: TSchemas,
+) {
+    return (
+        req: Request,
+        res: Response<any, ValidatedLocals<TSchemas>>,
+        next: NextFunction,
+    ) => {
         // Start with an empty validated object and fill in each section only if that schema exists.
         const validated = {
             params: undefined,
@@ -79,7 +85,10 @@ export function validateRequest<TSchemas extends RequestSchemas>(schema: TSchema
             const result = schema.params.safeParse(req.params);
             if (!result.success) {
                 return next(
-                    new ValidationError("One or more fields are invalid", formatIssues(result.error))
+                    new ValidationError(
+                        "One or more fields are invalid",
+                        formatIssues(result.error),
+                    ),
                 );
             }
             // This assertion stays inside the middleware so controllers can read typed
@@ -92,7 +101,10 @@ export function validateRequest<TSchemas extends RequestSchemas>(schema: TSchema
             const result = schema.body.safeParse(req.body);
             if (!result.success) {
                 return next(
-                    new ValidationError("One or more fields are invalid", formatIssues(result.error))
+                    new ValidationError(
+                        "One or more fields are invalid",
+                        formatIssues(result.error),
+                    ),
                 );
             }
             validated.body = result.data as InferSchema<TSchemas["body"]>;
@@ -102,7 +114,10 @@ export function validateRequest<TSchemas extends RequestSchemas>(schema: TSchema
             const result = schema.query.safeParse(req.query);
             if (!result.success) {
                 return next(
-                    new ValidationError("One or more fields are invalid", formatIssues(result.error))
+                    new ValidationError(
+                        "One or more fields are invalid",
+                        formatIssues(result.error),
+                    ),
                 );
             }
             validated.query = result.data as InferSchema<TSchemas["query"]>;

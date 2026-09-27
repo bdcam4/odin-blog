@@ -15,7 +15,7 @@ declare global {
 export async function requireAuth(
     req: Request,
     _res: Response,
-    next: NextFunction
+    next: NextFunction,
 ) {
     try {
         const header = req.headers.authorization;
@@ -40,6 +40,10 @@ export async function requireAuth(
 
         next();
     } catch (err) {
-        next(err instanceof AppError ? err : new UnauthorisedError("Invalid or expired token."));
+        next(
+            err instanceof AppError
+                ? err
+                : new UnauthorisedError("Invalid or expired token."),
+        );
     }
 }

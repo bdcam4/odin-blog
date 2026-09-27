@@ -6,11 +6,16 @@ import { ConflictError, UnauthorisedError } from "../errors/app-error.js";
 import type { RegisterInput, LoginInput } from "../schemas/auth.schema.js";
 import type { AuthUser } from "../types.js";
 
-const DUMMY_HASH = "$argon2id$v=19$m=65536,p=4,t=3$NSFHQviYJ6o0RTAtCjchGw$FHvqLNUL57ORmuxEswGdTFSCP/q70QFrZJmmZjBrWSw";
+const DUMMY_HASH =
+    "$argon2id$v=19$m=65536,p=4,t=3$NSFHQviYJ6o0RTAtCjchGw$FHvqLNUL57ORmuxEswGdTFSCP/q70QFrZJmmZjBrWSw";
 
 const ACCESS_TOKEN_TTL = 900; // 15m in seconds
 
-async function signAccessToken(user: { id: number; email: string; isAdmin: boolean }) {
+async function signAccessToken(user: {
+    id: number;
+    email: string;
+    isAdmin: boolean;
+}) {
     return await new jose.SignJWT({
         email: user.email,
         isAdmin: user.isAdmin,
@@ -32,27 +37,31 @@ async function signRefreshToken(user: { id: number }) {
         .sign(new TextEncoder().encode(env.JWT_REFRESH_SECRET));
 }
 
-async function issueTokens(user: AuthUser){
+async function issueTokens(user: AuthUser) {
     return {
-        user: { id: user.id, email: user.email},
+        user: { id: user.id, email: user.email },
         accessToken: await signAccessToken(user),
         refreshToken: await signRefreshToken(user),
         tokenType: "Bearer",
-        expiresIn: ACCESS_TOKEN_TTL
-    }
+        expiresIn: ACCESS_TOKEN_TTL,
+    };
 }
 
 export async function register(body: RegisterInput) {
-    const existing = await prisma.user.findUnique({ where: { email: body.email } });
+    const existing = await prisma.user.findUnique({
+        where: { email: body.email },
+    });
     if (existing) {
         throw new ConflictError("Email is already registered.");
     }
-    const passwordHash = await hash(body.password, { secret: Buffer.from(env.PEPPER_SECRET) })
+    const passwordHash = await hash(body.password, {
+        secret: Buffer.from(env.PEPPER_SECRET),
+    });
     return await prisma.user.create({
         data: {
             email: body.email,
-            hash: passwordHash
-        }
+            hash: passwordHash,
+        },
     });
 }
 
@@ -60,11 +69,17 @@ export async function login(body: LoginInput) {
     const user = await prisma.user.findUnique({ where: { email: body.email } });
 
     if (!user) {
-        await verify(DUMMY_HASH, body.password, { secret: Buffer.from(env.PEPPER_SECRET) });
+        await verify(DUMMY_HASH, body.password, {
+            secret: Buffer.from(env.PEPPER_SECRET),
+        });
         throw new UnauthorisedError("Invalid email or password.");
     }
 
-    if (!(await verify(user.hash, body.password, { secret: Buffer.from(env.PEPPER_SECRET) }))) {
+    if (
+        !(await verify(user.hash, body.password, {
+            secret: Buffer.from(env.PEPPER_SECRET),
+        }))
+    ) {
         throw new UnauthorisedError("Invalid email or password.");
     }
 
@@ -76,7 +91,7 @@ export async function refresh(refreshToken: string) {
     try {
         ({ payload } = await jose.jwtVerify(
             refreshToken,
-            new TextEncoder().encode(env.JWT_REFRESH_SECRET)
+            new TextEncoder().encode(env.JWT_REFRESH_SECRET),
         ));
     } catch {
         throw new UnauthorisedError("Invalid or expired token.");
@@ -86,7 +101,9 @@ export async function refresh(refreshToken: string) {
         throw new UnauthorisedError("Invalid or expired token.");
     }
 
-    const user = await prisma.user.findUnique({ where: { id: Number(payload.sub) } });
+    const user = await prisma.user.findUnique({
+        where: { id: Number(payload.sub) },
+    });
     if (!user) {
         throw new UnauthorisedError("Invalid or expired token.");
     }

@@ -1,5 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
-import { AppError, PROBLEM_TYPE_BASE, type ProblemDetails } from "../errors/app-error.js";
+import {
+    AppError,
+    PROBLEM_TYPE_BASE,
+    type ProblemDetails,
+} from "../errors/app-error.js";
 
 /**
  * Terminal Express error middleware: converts any failure into an
@@ -14,7 +18,12 @@ import { AppError, PROBLEM_TYPE_BASE, type ProblemDetails } from "../errors/app-
  * @param _next - Unused; present for arity. Forwards `err` if
  *   headers were already sent.
  */
-export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(
+    err: unknown,
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+) {
     // A response already started streaming; it cannot be replaced.
     if (res.headersSent) {
         _next(err);

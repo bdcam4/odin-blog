@@ -1,26 +1,30 @@
-import { Router } from 'express';
-import { validateRequest } from '../middleware/validate-request.js';
-import { registerBodySchema, loginBodySchema, refreshBodySchema } from '../schemas/auth.schema.js';
-import * as authController from '../controllers/auth.controller.js';
+import { Router } from "express";
+import { validateRequest } from "../middleware/validate-request.js";
+import {
+    registerBodySchema,
+    loginBodySchema,
+    refreshBodySchema,
+} from "../schemas/auth.schema.js";
+import * as authController from "../controllers/auth.controller.js";
 
 const authRoutes = Router();
 
 authRoutes.post(
     "/register",
     validateRequest({ body: registerBodySchema }),
-    authController.register
+    authController.register,
 );
 
 authRoutes.post(
     "/login",
     validateRequest({ body: loginBodySchema }),
-    authController.login
+    authController.login,
 );
 
 authRoutes.post(
     "/refresh",
     validateRequest({ body: refreshBodySchema }),
-    authController.refresh
+    authController.refresh,
 );
 
 export default authRoutes;
