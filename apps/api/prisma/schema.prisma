@@ -67,7 +67,6 @@ model Session {
 
     refreshTokenHash    String      @unique
     expiresAt           DateTime
-    revokedAt           DateTime?
 
     createdAt           DateTime    @default(now())
     updatedAt           DateTime    @updatedAt
