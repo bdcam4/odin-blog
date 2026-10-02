@@ -35,8 +35,9 @@ function createRefreshToken() {
 }
 
 export async function register(body: RegisterInput) {
+    const email = body.email.toLowerCase();
     const existing = await prisma.user.findUnique({
-        where: { email: body.email },
+        where: { email },
     });
     if (existing) {
         throw new ConflictError("Email is already registered.");
@@ -44,17 +45,17 @@ export async function register(body: RegisterInput) {
     const passwordHash = await hash(body.password, {
         secret: Buffer.from(env.PEPPER_SECRET),
     });
-
     return await prisma.user.create({
         data: {
-            email: body.email,
+            email,
             hash: passwordHash,
         },
     });
 }
 
 export async function login(body: LoginInput) {
-    const user = await prisma.user.findUnique({ where: { email: body.email } });
+    const email = body.email.toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
         await verify(DUMMY_HASH, body.password, {
@@ -85,7 +86,7 @@ export async function login(body: LoginInput) {
     });
 
     return {
-        user: { id: user.id, email: user.email },
+        user: { id: user.id, email },
         accessToken,
         refreshToken: refreshToken.token,
         tokenType: "Bearer",
@@ -94,12 +95,23 @@ export async function login(body: LoginInput) {
 }
 
 export async function refresh(refreshToken: string) {
+    const now = new Date();
+
+    const newRefreshToken = createRefreshToken();
     const refreshTokenHash = createHash("sha256")
         .update(refreshToken)
         .digest("hex");
-    const session = await prisma.session.findUnique({
-        where: { refreshTokenHash },
-        include: { user: true },
+
+    const [session] = await prisma.session.updateManyAndReturn({
+        where: {
+            refreshTokenHash,
+            expiresAt: { gt: now },
+        },
+        data: {
+            refreshTokenHash: newRefreshToken.tokenHash,
+            expiresAt: new Date(now.getTime() + REFRESH_TOKEN_TTL_SECONDS * 1000),
+        },
+        include: { user: true }
     });
 
     if (!session) {
@@ -111,9 +123,7 @@ export async function refresh(refreshToken: string) {
         email: session.user.email,
         isAdmin: session.user.isAdmin,
     };
-
     const accessToken = await signAccessToken(user, session.id);
-    const newRefreshToken = createRefreshToken();
 
     return {
         user,
