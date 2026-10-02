@@ -1,5 +1,6 @@
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
+import { Prisma } from "../generated/prisma/client.js";
 import { hash, verify } from "argon2";
 import * as jose from "jose";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
@@ -36,21 +37,26 @@ function createRefreshToken() {
 
 export async function register(body: RegisterInput) {
     const email = body.email.toLowerCase();
-    const existing = await prisma.user.findUnique({
-        where: { email },
-    });
-    if (existing) {
-        throw new ConflictError("Email is already registered.");
-    }
     const passwordHash = await hash(body.password, {
         secret: Buffer.from(env.PEPPER_SECRET),
     });
-    return await prisma.user.create({
-        data: {
-            email,
-            hash: passwordHash,
-        },
-    });
+
+    try {
+        return await prisma.user.create({
+            data: {
+                email,
+                hash: passwordHash,
+            },
+        });
+    } catch (error) {
+        if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === "P2002"
+        ) {
+            throw new ConflictError("Email is already registered.");
+        }
+        throw error;
+    }
 }
 
 export async function login(body: LoginInput) {
