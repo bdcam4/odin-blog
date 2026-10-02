@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import * as jose from "jose";
 import { env } from "../config/env.js";
 import { AppError, UnauthorisedError } from "../errors/app-error.js";
+import { accessTokenPayloadSchema } from "../schemas/auth.schema.js";
 import type { AuthUser } from "../types.js";
 
 declare global {
@@ -26,16 +27,20 @@ export async function requireAuth(
         const accessToken = header.slice("Bearer ".length);
         const secret = new TextEncoder().encode(env.JWT_ACCESS_SECRET);
 
-        const { payload } = await jose.jwtVerify(accessToken, secret);
+        const { payload } = await jose.jwtVerify(accessToken, secret, {
+            requiredClaims: ["sub", "exp"],
+            algorithms: ["HS256"],
+        });
 
-        if (payload.typ !== "access") {
+        const result = accessTokenPayloadSchema.safeParse(payload);
+        if (!result.success) {
             throw new UnauthorisedError("Invalid or expired token.");
         }
 
         req.user = {
-            id: Number(payload.sub),
-            email: payload.email as string,
-            isAdmin: payload.isAdmin as boolean,
+            id: result.data.sub,
+            email: result.data.email,
+            isAdmin: result.data.isAdmin,
         };
 
         next();
