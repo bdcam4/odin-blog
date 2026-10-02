@@ -6,6 +6,7 @@ import apiRouter from "./routes/index.js";
 const app: Express = express();
 
 app.use(express.json());
+app.set("trust proxy", 1);
 
 app.get("/", (_req: Request, res: Response) => {
     res.json({ status: "ok" });
