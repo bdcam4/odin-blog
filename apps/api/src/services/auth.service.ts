@@ -115,7 +115,6 @@ export async function refresh(refreshToken: string) {
         },
         data: {
             refreshTokenHash: newRefreshToken.tokenHash,
-            expiresAt: new Date(now.getTime() + REFRESH_TOKEN_TTL_SECONDS * 1000),
         },
         include: { user: true }
     });
