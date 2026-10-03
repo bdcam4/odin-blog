@@ -3,7 +3,6 @@ import { validateRequest } from "../middleware/validate-request.js";
 import {
     registerBodySchema,
     loginBodySchema,
-    refreshBodySchema,
 } from "../schemas/auth.schema.js";
 import * as authController from "../controllers/auth.controller.js";
 import {
@@ -31,7 +30,6 @@ authRoutes.post(
 authRoutes.post(
     "/refresh",
     refreshLimiter,
-    validateRequest({ body: refreshBodySchema }),
     authController.refresh,
 );
 

@@ -82,7 +82,7 @@ export async function login(body: LoginInput) {
     const refreshToken = createRefreshToken();
     const accessToken = await signAccessToken(user, sid);
 
-    await prisma.session.create({
+    const [session] = await prisma.session.createManyAndReturn({
         data: {
             id: sid,
             userId: user.id,
@@ -95,6 +95,7 @@ export async function login(body: LoginInput) {
         user: { id: user.id, email },
         accessToken,
         refreshToken: refreshToken.token,
+        refreshExpiresAt: session.expiresAt,
         tokenType: "Bearer",
         expiresIn: ACCESS_TOKEN_TTL,
     };
@@ -134,6 +135,7 @@ export async function refresh(refreshToken: string) {
         user,
         accessToken,
         refreshToken: newRefreshToken.token,
+        refreshExpiresAt: session.expiresAt,
         tokenType: "Bearer",
         expiresIn: ACCESS_TOKEN_TTL,
     };

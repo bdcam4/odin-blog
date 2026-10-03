@@ -3,8 +3,8 @@ import type { ValidatedLocals } from "../middleware/validate-request.js";
 import type {
     registerBodySchema,
     loginBodySchema,
-    refreshBodySchema,
 } from "../schemas/auth.schema.js";
+import { refreshCookieSchema } from "../schemas/auth.schema.js";
 import * as authService from "../services/auth.service.js";
 
 export async function register(
@@ -25,14 +25,43 @@ export async function login(
 ) {
     const body = res.locals.validated.body;
     const result = await authService.login(body);
-    return res.status(200).json(result);
+
+    const { refreshToken, ...responseBody } = result;
+
+    res.cookie("__Secure-refresh", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        path: "/api/auth",
+        expires: result.refreshExpiresAt,
+    });
+
+    return res.status(200).json(responseBody);
 }
 
 export async function refresh(
-    _req: Request,
-    res: Response<unknown, ValidatedLocals<{ body: typeof refreshBodySchema }>>,
+    req: Request,
+    res: Response,
 ) {
-    const body = res.locals.validated.body;
-    const result = await authService.refresh(body.refreshToken);
-    return res.status(200).json(result);
+    const parsedCookie = refreshCookieSchema.safeParse({
+        refreshToken: req.cookies?.["__Secure-refresh"],
+    });
+
+    if (!parsedCookie.success) {
+        throw new UnauthorisedError("Invalid or expired token.");
+    }
+
+    const result = await authService.refresh(parsedCookie.data.refreshToken);
+
+    const { refreshToken, ...responseBody } = result;
+
+    res.cookie("__Secure-refresh", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        path: "/api/auth",
+        expires: result.refreshExpiresAt,
+    });
+
+    return res.status(200).json(responseBody);
 }
