@@ -4,7 +4,7 @@ import type {
     registerBodySchema,
     loginBodySchema,
 } from "../schemas/auth.schema.js";
-import { refreshCookieSchema } from "../schemas/auth.schema.js";
+import type { RefreshTokenLocals } from "../middleware/require-refresh-token.js";
 import * as authService from "../services/auth.service.js";
 
 export async function register(
@@ -40,18 +40,10 @@ export async function login(
 }
 
 export async function refresh(
-    req: Request,
-    res: Response,
+    _req: Request,
+    res: Response<unknown, RefreshTokenLocals>,
 ) {
-    const parsedCookie = refreshCookieSchema.safeParse({
-        refreshToken: req.cookies?.["__Secure-refresh"],
-    });
-
-    if (!parsedCookie.success) {
-        throw new UnauthorisedError("Invalid or expired token.");
-    }
-
-    const result = await authService.refresh(parsedCookie.data.refreshToken);
+    const result = await authService.refresh(res.locals.refreshToken);
 
     const { refreshToken, ...responseBody } = result;
 

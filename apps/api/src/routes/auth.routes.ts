@@ -5,6 +5,7 @@ import {
     loginBodySchema,
 } from "../schemas/auth.schema.js";
 import * as authController from "../controllers/auth.controller.js";
+import { requireRefreshToken } from "../middleware/require-refresh-token.js";
 import {
     registerLimiter,
     loginLimiter,
@@ -30,6 +31,7 @@ authRoutes.post(
 authRoutes.post(
     "/refresh",
     refreshLimiter,
+    requireRefreshToken,
     authController.refresh,
 );
 
