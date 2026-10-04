@@ -4,7 +4,10 @@ import type {
     registerBodySchema,
     loginBodySchema,
 } from "../schemas/auth.schema.js";
-import type { RefreshTokenLocals } from "../middleware/require-refresh-token.js";
+import type {
+    RefreshTokenLocals,
+    OptionalRefreshTokenLocals
+} from "../middleware/require-refresh-token.js";
 import * as authService from "../services/auth.service.js";
 
 export async function register(
@@ -37,6 +40,22 @@ export async function login(
     });
 
     return res.status(200).json(responseBody);
+}
+
+export async function logout(
+    _req: Request,
+    res: Response<unknown, OptionalRefreshTokenLocals>,
+) {
+    await authService.logout(res.locals.refreshToken);
+
+    res.clearCookie("__Secure-refresh", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        path: "/api/auth",
+    });
+
+    return res.sendStatus(204);
 }
 
 export async function refresh(

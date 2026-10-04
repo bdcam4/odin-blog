@@ -9,6 +9,10 @@ export const refreshCookieSchema = z.object({
     refreshToken: z.string().min(1),
 });
 
+export const optionalCookieSchema = z.object({
+    refreshToken: z.string().min(1).optional(),
+});
+
 export const accessTokenPayloadSchema = z.object({
     typ: z.literal("access"),
     sub: z

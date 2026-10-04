@@ -101,13 +101,24 @@ export async function login(body: LoginInput) {
     };
 }
 
+export async function logout(refreshToken?: string) {
+    if (refreshToken) {
+        const refreshTokenHash = createHash("sha256")
+        .update(refreshToken)
+        .digest("hex");
+        await prisma.session.deleteMany({
+            where: { refreshTokenHash },
+        });
+    }
+}
+
 export async function refresh(refreshToken: string) {
     const now = new Date();
 
     const newRefreshToken = createRefreshToken();
     const refreshTokenHash = createHash("sha256")
-        .update(refreshToken)
-        .digest("hex");
+    .update(refreshToken)
+    .digest("hex");
 
     const [session] = await prisma.session.updateManyAndReturn({
         where: {
