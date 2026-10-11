@@ -7,6 +7,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { ConflictError, UnauthorisedError } from "../errors/app-error.js";
 import type { RegisterInput, LoginInput } from "../schemas/auth.schema.js";
 import type { AuthUser } from "../types.js";
+import { createCsrfToken } from "../middleware/csrf.ts";
 
 const DUMMY_HASH =
     "$argon2id$v=19$m=65536,p=4,t=3$NSFHQviYJ6o0RTAtCjchGw$FHvqLNUL57ORmuxEswGdTFSCP/q70QFrZJmmZjBrWSw";
@@ -88,6 +89,7 @@ export async function login(body: LoginInput) {
             userId: user.id,
             refreshTokenHash: refreshToken.tokenHash,
             expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000),
+            csrfToken: createCsrfToken(),
         },
     });
 
@@ -96,6 +98,7 @@ export async function login(body: LoginInput) {
         accessToken,
         refreshToken: refreshToken.token,
         refreshExpiresAt: session.expiresAt,
+        csrfToken: session.csrfToken,
         tokenType: "Bearer",
         expiresIn: ACCESS_TOKEN_TTL,
     };
@@ -149,5 +152,27 @@ export async function refresh(refreshToken: string) {
         refreshExpiresAt: session.expiresAt,
         tokenType: "Bearer",
         expiresIn: ACCESS_TOKEN_TTL,
+    };
+}
+
+export async function csrf(refreshToken: string) {
+    const now = new Date();
+    const refreshTokenHash = createHash("sha256")
+    .update(refreshToken)
+    .digest("hex");
+
+    const session = await prisma.session.findUnique({
+        where: {
+            refreshTokenHash,
+            expiresAt: { gt: now },
+        },
+    });
+
+    if (!session) {
+        throw new UnauthorisedError("Invalid or expired token.");
+    }
+
+    return {
+        csrfToken: session.csrfToken,
     };
 }

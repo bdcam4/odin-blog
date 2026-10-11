@@ -65,6 +65,7 @@ model Session {
     userId              Int
     user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+    csrfToken           String
     refreshTokenHash    String      @unique
     expiresAt           DateTime
 

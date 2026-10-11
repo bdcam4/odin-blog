@@ -87,3 +87,15 @@ export class UnauthorisedError extends AppError {
         });
     }
 }
+
+export class ForbiddenError extends AppError {
+    constructor(detail: string) {
+        super({
+            status: 403,
+            type: "forbidden",
+            title: "Forbidden",
+            code: "FORBIDDEN",
+            detail,
+        });
+    }
+}

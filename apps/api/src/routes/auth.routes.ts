@@ -9,8 +9,14 @@ import { optionalRefreshToken, requireRefreshToken } from "../middleware/require
 import {
     registerLimiter,
     loginLimiter,
-    refreshLimiter
+    refreshLimiter,
+    csrfLimiter
 } from "../middleware/rate-limit.js";
+import {
+    requireAllowedOrigin,
+    requireCsrf,
+    requireCsrfIfSessionExists,
+} from "../middleware/csrf.js";
 
 const authRoutes = Router();
 
@@ -24,21 +30,34 @@ authRoutes.post(
 authRoutes.post(
     "/login",
     loginLimiter,
+    requireAllowedOrigin,
     validateRequest({ body: loginBodySchema }),
     authController.login,
 );
 
 authRoutes.post(
     "/logout",
+    requireAllowedOrigin,
     optionalRefreshToken,
+    requireCsrfIfSessionExists,
     authController.logout,
 );
 
 authRoutes.post(
     "/refresh",
     refreshLimiter,
+    requireAllowedOrigin,
     requireRefreshToken,
+    requireCsrf,
     authController.refresh,
+);
+
+authRoutes.get(
+    "/csrf",
+    csrfLimiter,
+    requireAllowedOrigin,
+    requireRefreshToken,
+    authController.csrf,
 );
 
 export default authRoutes;

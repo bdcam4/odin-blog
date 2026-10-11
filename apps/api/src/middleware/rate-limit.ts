@@ -28,3 +28,4 @@ export const apiLimiter = createLimiter(FIFTEEN_MINUTES, 300);
 export const loginLimiter = createLimiter(FIFTEEN_MINUTES, 10);
 export const registerLimiter = createLimiter(ONE_HOUR, 5);
 export const refreshLimiter = createLimiter(FIFTEEN_MINUTES, 30);
+export const csrfLimiter = createLimiter(FIFTEEN_MINUTES, 30);

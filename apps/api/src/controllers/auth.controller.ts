@@ -76,3 +76,12 @@ export async function refresh(
 
     return res.status(200).json(responseBody);
 }
+
+export async function csrf(
+    _req: Request,
+    res: Response<unknown, RefreshTokenLocals>,
+) {
+    const body = await authService.csrf(res.locals.refreshToken);
+    res.set("Cache-Control", "no-store");
+    return res.status(200).json(body);
+}
