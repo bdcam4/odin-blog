@@ -17,6 +17,7 @@ import {
     requireCsrf,
     requireCsrfIfSessionExists,
 } from "../middleware/csrf.js";
+import { requireAuth } from "../middleware/authenticate.js";
 
 const authRoutes = Router();
 
@@ -58,6 +59,13 @@ authRoutes.get(
     requireAllowedOrigin,
     requireRefreshToken,
     authController.csrf,
+);
+
+authRoutes.get(
+    "/me",
+    //meLimiter,
+    requireAuth,
+    authController.me,
 );
 
 export default authRoutes;

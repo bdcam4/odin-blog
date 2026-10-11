@@ -9,6 +9,7 @@ import type {
     OptionalRefreshTokenLocals
 } from "../middleware/require-refresh-token.js";
 import * as authService from "../services/auth.service.js";
+import { UnauthorisedError } from "../errors/app-error.js";
 
 export async function register(
     _req: Request,
@@ -83,5 +84,16 @@ export async function csrf(
 ) {
     const body = await authService.csrf(res.locals.refreshToken);
     res.set("Cache-Control", "no-store");
+    return res.status(200).json(body);
+}
+
+export async function me(
+    req: Request,
+    res: Response,
+) {
+    if (!req.user) {
+        throw new UnauthorisedError("Invalid or expired token.");
+    }
+    const body = await authService.getCurrentUser(req.user.id);
     return res.status(200).json(body);
 }

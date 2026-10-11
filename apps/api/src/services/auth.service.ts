@@ -7,7 +7,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { ConflictError, UnauthorisedError } from "../errors/app-error.js";
 import type { RegisterInput, LoginInput } from "../schemas/auth.schema.js";
 import type { AuthUser } from "../types.js";
-import { createCsrfToken } from "../middleware/csrf.ts";
+import { createCsrfToken } from "../middleware/csrf.js";
 
 const DUMMY_HASH =
     "$argon2id$v=19$m=65536,p=4,t=3$NSFHQviYJ6o0RTAtCjchGw$FHvqLNUL57ORmuxEswGdTFSCP/q70QFrZJmmZjBrWSw";
@@ -174,5 +174,26 @@ export async function csrf(refreshToken: string) {
 
     return {
         csrfToken: session.csrfToken,
+    };
+}
+
+export async function getCurrentUser(id: number) {
+    const user = await prisma.user.findUnique({
+        where: {
+            id,
+        },
+    });
+
+    if (!user) {
+        throw new UnauthorisedError("Invalid or expired token.");
+    }
+
+    return {
+        user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            isAdmin: user.isAdmin,
+        }
     };
 }
