@@ -63,7 +63,6 @@ authRoutes.get(
 
 authRoutes.get(
     "/me",
-    //meLimiter,
     requireAuth,
     authController.me,
 );
