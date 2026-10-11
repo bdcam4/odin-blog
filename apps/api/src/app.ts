@@ -3,9 +3,11 @@ import { notFoundHandler } from "./middleware/not-found.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import apiRouter from "./routes/index.js";
 import cookieParser from "cookie-parser";
+import { corsMiddleware } from "./config/cors.js";
 
 const app: Express = express();
 
+app.use(corsMiddleware);
 app.use(express.json());
 app.use(cookieParser());
 app.set("trust proxy", 1);
