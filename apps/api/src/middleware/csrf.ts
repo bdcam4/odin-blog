@@ -29,12 +29,6 @@ export function createCsrfToken() {
 
 export async function requireCsrf(req: Request, res: Response, next: NextFunction) {
     const now = new Date();
-
-    const csrfToken = req.get("X-CSRF-Token");
-    if (!csrfToken) {
-        throw new UnauthorisedError("Invalid or expired token.");
-    }
-
     const refreshToken = res.locals.refreshToken;
     const refreshTokenHash = createHash("sha256")
     .update(refreshToken)
@@ -47,8 +41,13 @@ export async function requireCsrf(req: Request, res: Response, next: NextFunctio
         },
     });
 
-    if (!session || csrfToken !== session.csrfToken) {
+    if (!session) {
         throw new UnauthorisedError("Invalid or expired token.");
+    }
+
+    const csrfToken = req.get("X-CSRF-Token");
+    if (!csrfToken || csrfToken !== session.csrfToken) {
+        throw new ForbiddenError("Missing or invalid CSRF token.");
     }
 
     next();
@@ -78,7 +77,7 @@ export async function requireCsrfIfSessionExists(req: Request, res: Response, ne
     }
 
     const csrfToken = req.get("X-CSRF-Token");
-    if (csrfToken !== session.csrfToken) {
+    if (!csrfToken || csrfToken !== session.csrfToken) {
         throw new ForbiddenError("Missing or invalid CSRF token.");
     }
 
