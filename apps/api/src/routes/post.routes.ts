@@ -3,9 +3,11 @@ import type { Request, Response } from "express";
 import { validateRequest } from "../middleware/validate-request.js";
 import {
     createPostBodySchema,
+    listPostsQuerySchema,
     type CreatePostBody,
 } from "../schemas/post.schema.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { optionalAuth, requireAuth } from "../middleware/authenticate.js";
+import * as postController from "../controllers/post.controller.js";
 
 const postRoutes = Router();
 
@@ -19,6 +21,16 @@ postRoutes.post(
         const body = res.locals.validated?.body as CreatePostBody;
         res.status(201).json({ title: body.title });
     },
+);
+
+/**
+ * GET /api/posts?page=1&limit=20
+ */
+postRoutes.get(
+    "/",
+    optionalAuth,
+    validateRequest({ query: listPostsQuerySchema }),
+    postController.listPosts,
 );
 
 export default postRoutes;

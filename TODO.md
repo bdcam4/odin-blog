@@ -89,6 +89,37 @@ Route design:
     DELETE /api/comments/:id
 
 ______________________________________________________
+Resource rules and open decisions:
+
+    Posts:
+        - The post owner and admins can create, read/manage, update, and
+          delete posts. They can see drafts and change published status.
+        - Public post lists/details include published posts only; unpublished
+          posts are not visible to other users.
+        - Generate a readable slug from the title (lowercase, hyphen-separated).
+          Resolve collisions with a numeric suffix, e.g. my-title-2. Keep the
+          slug unchanged after creation. Handle unique-constraint collisions,
+          including concurrent create attempts.
+        - Use explicit Prisma selects and return only fields needed by pages.
+        - Soft deletion is a possible future decision; if adopted, define read
+          behavior and whether deleted-post slugs remain reserved.
+
+    Comments:
+        - Creating comments requires authentication and is allowed only on
+          published posts. Comments are visible immediately.
+        - The comment owner or an admin can delete a comment. Comment editing
+          is not supported.
+
+    Pagination (not finalised):
+        - Suggested starting point for list endpoints: page/limit offset
+          pagination, default limit 20 and maximum 100.
+        - Use stable ordering by createdAt DESC, then id DESC; fetch one extra
+          result to determine whether another page exists.
+        - Revisit cursor pagination if list sizes or changing data make offset
+          pagination unsuitable. Decide whether comments need pagination based
+          on expected list sizes.
+
+______________________________________________________
 Auth plan (decisions locked in — libraries chosen over express-session/bcrypt):
 
     Libraries:

@@ -13,14 +13,14 @@ declare global {
     }
 }
 
-export async function requireAuth(
-    req: Request,
-    _res: Response,
-    next: NextFunction,
-) {
+async function authenticate(req: Request, next: NextFunction, optional: boolean) {
     try {
         const header = req.headers.authorization;
         if (!header?.startsWith("Bearer ")) {
+            if (optional && !header) {
+                next();
+                return;
+            }
             throw new UnauthorisedError("Invalid or expired token.");
         }
 
@@ -51,4 +51,12 @@ export async function requireAuth(
                 : new UnauthorisedError("Invalid or expired token."),
         );
     }
+}
+
+export function requireAuth(req: Request, _res: Response, next: NextFunction) {
+    return authenticate(req, next, false);
+}
+
+export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+    return authenticate(req, next, true);
 }
