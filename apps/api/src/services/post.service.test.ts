@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UnauthorisedError } from "../errors/app-error.js";
 import { prisma } from "../lib/prisma.js";
 import type { AuthUser } from "../types.js";
-import { listPosts } from "./post.service.js";
+import { create, list } from "./post.service.js";
 
 vi.mock("../lib/prisma.js", () => ({
     prisma: {
         post: {
             findMany: vi.fn(),
+            create: vi.fn(),
         },
     },
 }));
@@ -34,10 +35,17 @@ describe("listPosts", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.mocked(prisma.post.findMany).mockResolvedValue([]);
+        vi.mocked(prisma.post.create).mockResolvedValue({
+            id: 10,
+            slug: "test-post",
+            title: "Test post",
+            published: false,
+            createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        } as never);
     });
 
     it("returns published posts to anonymous callers by default", async () => {
-        await listPosts(defaultQuery);
+        await list(defaultQuery);
 
         expect(prisma.post.findMany).toHaveBeenCalledWith(
             expect.objectContaining({ where: { published: true } }),
@@ -46,14 +54,14 @@ describe("listPosts", () => {
 
     it("rejects anonymous callers who request drafts", async () => {
         await expect(
-            listPosts({ ...defaultQuery, includeDrafts: true }),
+            list({ ...defaultQuery, includeDrafts: true }),
         ).rejects.toBeInstanceOf(UnauthorisedError);
 
         expect(prisma.post.findMany).not.toHaveBeenCalled();
     });
 
     it("lets an owner see published posts and their own drafts", async () => {
-        await listPosts({ ...defaultQuery, includeDrafts: true }, owner);
+        await list({ ...defaultQuery, includeDrafts: true }, owner);
 
         expect(prisma.post.findMany).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -68,10 +76,40 @@ describe("listPosts", () => {
     });
 
     it("lets admins see published posts and all drafts", async () => {
-        await listPosts({ ...defaultQuery, includeDrafts: true }, admin);
+        await list({ ...defaultQuery, includeDrafts: true }, admin);
 
         expect(prisma.post.findMany).toHaveBeenCalledWith(
             expect.objectContaining({ where: {} }),
         );
+    });
+
+    it("creates a draft with a generated unique slug and returns its summary", async () => {
+        const result = await create(
+            { title: "Café & Coding", body: "Post body" },
+            owner,
+        );
+
+        expect(prisma.post.create).toHaveBeenCalledWith({
+            data: {
+                title: "Café & Coding",
+                body: "Post body",
+                slug: "cafe-coding",
+                author: { connect: { id: owner.id } },
+            },
+            select: {
+                id: true,
+                slug: true,
+                title: true,
+                published: true,
+                createdAt: true,
+            },
+        });
+        expect(result).toEqual({
+            id: 10,
+            slug: "test-post",
+            title: "Test post",
+            published: false,
+            createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        });
     });
 });
