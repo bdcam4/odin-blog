@@ -10,11 +10,7 @@ type RequestSchemas = {
 
 // Generic container for the parsed request data we store on res.locals.
 // Each route can fill in params/body/query with the types inferred from its Zod schemas.
-export type ValidatedRequestData<
-    Params = undefined,
-    Body = undefined,
-    Query = undefined,
-> = {
+export type ValidatedRequestData<Params = undefined, Body = undefined, Query = undefined> = {
     params: Params;
     body: Body;
     query: Query;
@@ -22,8 +18,9 @@ export type ValidatedRequestData<
 
 // If a schema exists, convert it to the TypeScript type of its parsed output.
 // If no schema was provided for that request part, keep it as undefined.
-type InferSchema<TSchema extends z.ZodTypeAny | undefined> =
-    TSchema extends z.ZodTypeAny ? z.infer<TSchema> : undefined;
+type InferSchema<TSchema extends z.ZodTypeAny | undefined> = TSchema extends z.ZodTypeAny
+    ? z.infer<TSchema>
+    : undefined;
 
 // Builds the res.locals shape for this specific validateRequest(...) call
 // by mapping each provided schema to its inferred parsed type.
@@ -62,14 +59,8 @@ function formatIssues(error: z.ZodError) {
  * @param schema - Zod schemas describing which request sections to validate
  * @returns Express middleware that validates the request and populates `res.locals.validated`
  */
-export function validateRequest<TSchemas extends RequestSchemas>(
-    schema: TSchemas,
-) {
-    return (
-        req: Request,
-        res: Response<any, ValidatedLocals<TSchemas>>,
-        next: NextFunction,
-    ) => {
+export function validateRequest<TSchemas extends RequestSchemas>(schema: TSchemas) {
+    return (req: Request, res: Response<any, ValidatedLocals<TSchemas>>, next: NextFunction) => {
         // Start with an empty validated object and fill in each section only if that schema exists.
         const validated = {
             params: undefined,

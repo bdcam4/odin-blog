@@ -78,9 +78,9 @@ describe("listPosts", () => {
     });
 
     it("rejects anonymous callers who request drafts", async () => {
-        await expect(
-            list({ ...defaultQuery, includeDrafts: true }),
-        ).rejects.toBeInstanceOf(UnauthorisedError);
+        await expect(list({ ...defaultQuery, includeDrafts: true })).rejects.toBeInstanceOf(
+            UnauthorisedError,
+        );
 
         expect(prisma.post.findMany).not.toHaveBeenCalled();
     });
@@ -91,10 +91,7 @@ describe("listPosts", () => {
         expect(prisma.post.findMany).toHaveBeenCalledWith(
             expect.objectContaining({
                 where: {
-                    OR: [
-                        { published: true },
-                        { published: false, authorId: owner.id },
-                    ],
+                    OR: [{ published: true }, { published: false, authorId: owner.id }],
                 },
             }),
         );
@@ -103,16 +100,11 @@ describe("listPosts", () => {
     it("lets admins see published posts and all drafts", async () => {
         await list({ ...defaultQuery, includeDrafts: true }, admin);
 
-        expect(prisma.post.findMany).toHaveBeenCalledWith(
-            expect.objectContaining({ where: {} }),
-        );
+        expect(prisma.post.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
     });
 
     it("creates a draft with a generated unique slug and returns its summary", async () => {
-        const result = await create(
-            { title: "Café & Coding", body: "Post body" },
-            owner,
-        );
+        const result = await create({ title: "Café & Coding", body: "Post body" }, owner);
 
         expect(prisma.post.create).toHaveBeenCalledWith({
             data: {
@@ -162,10 +154,7 @@ describe("listPosts", () => {
             expect.objectContaining({
                 where: {
                     slug: "my-draft",
-                    OR: [
-                        { published: true },
-                        { published: false, authorId: owner.id },
-                    ],
+                    OR: [{ published: true }, { published: false, authorId: owner.id }],
                 },
             }),
         );
@@ -184,9 +173,7 @@ describe("listPosts", () => {
     it("returns not found when no accessible post matches the slug", async () => {
         vi.mocked(prisma.post.findFirst).mockResolvedValue(null);
 
-        await expect(getBySlug("private-draft")).rejects.toBeInstanceOf(
-            NotFoundError,
-        );
+        await expect(getBySlug("private-draft")).rejects.toBeInstanceOf(NotFoundError);
     });
 
     it("updates only supplied fields on the owner's post", async () => {

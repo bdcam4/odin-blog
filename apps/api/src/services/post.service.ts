@@ -5,7 +5,6 @@ import type { CreatePostBody, ListPostsQuery, UpdatePostBody } from "../schemas/
 import type { AuthUser } from "../types.js";
 
 export async function list(query: ListPostsQuery, user?: AuthUser) {
-
     const { page, limit, includeDrafts } = query;
     const skip = (page - 1) * limit;
     let where: Prisma.PostWhereInput = { published: true };
@@ -18,10 +17,7 @@ export async function list(query: ListPostsQuery, user?: AuthUser) {
         where = user.isAdmin
             ? {}
             : {
-                  OR: [
-                      { published: true },
-                      { published: false, authorId: user.id },
-                  ],
+                  OR: [{ published: true }, { published: false, authorId: user.id }],
               };
     }
 
@@ -51,14 +47,10 @@ export async function getBySlug(slug: string, user?: AuthUser) {
         ...(user?.isAdmin
             ? {}
             : user
-                ? {
-                    OR: [
-                        { published: true },
-                        { published: false, authorId: user.id },
-                    ],
+              ? {
+                    OR: [{ published: true }, { published: false, authorId: user.id }],
                 }
-                : { published: true }
-        )
+              : { published: true }),
     };
 
     const post = await prisma.post.findFirst({
@@ -77,7 +69,7 @@ export async function getBySlug(slug: string, user?: AuthUser) {
                     name: true,
                 },
             },
-        }
+        },
     });
 
     if (!post) {
@@ -126,9 +118,7 @@ export async function create(body: CreatePostBody, user: AuthUser) {
 }
 
 export async function update(id: number, body: UpdatePostBody, user: AuthUser) {
-    const where = user.isAdmin
-        ? { id }
-        : { id, authorId: user.id };
+    const where = user.isAdmin ? { id } : { id, authorId: user.id };
 
     try {
         return await prisma.post.update({
@@ -148,13 +138,10 @@ export async function update(id: number, body: UpdatePostBody, user: AuthUser) {
                         name: true,
                     },
                 },
-            }
+            },
         });
     } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === "P2025"
-        ) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
             throw new NotFoundError("Post not found.");
         }
         throw error;
@@ -162,9 +149,7 @@ export async function update(id: number, body: UpdatePostBody, user: AuthUser) {
 }
 
 export async function remove(id: number, user: AuthUser): Promise<void> {
-    const where = user.isAdmin
-        ? { id }
-        : { id, authorId: user.id };
+    const where = user.isAdmin ? { id } : { id, authorId: user.id };
 
     const result = await prisma.post.deleteMany({ where });
 

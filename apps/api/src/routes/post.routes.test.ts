@@ -32,9 +32,7 @@ describe("GET /api/posts", () => {
     });
 
     it("passes the parsed includeDrafts flag to the service", async () => {
-        const response = await request(app).get(
-            "/api/posts?includeDrafts=yes",
-        );
+        const response = await request(app).get("/api/posts?includeDrafts=yes");
 
         expect(response.status).toBe(200);
         expect(postService.list).toHaveBeenCalledWith(
@@ -104,10 +102,7 @@ describe("GET /api/posts/:slug", () => {
 
         expect(response.status).toBe(200);
         expect(response.body).toEqual(result);
-        expect(postService.getBySlug).toHaveBeenCalledWith(
-            "public-post",
-            undefined,
-        );
+        expect(postService.getBySlug).toHaveBeenCalledWith("public-post", undefined);
     });
 
     it("passes the authenticated user for draft visibility checks", async () => {
@@ -224,9 +219,7 @@ describe("PATCH /api/posts/:id", () => {
     }
 
     it("requires authentication", async () => {
-        const response = await request(app)
-            .patch("/api/posts/42")
-            .send({ title: "Updated title" });
+        const response = await request(app).patch("/api/posts/42").send({ title: "Updated title" });
 
         expect(response.status).toBe(401);
         expect(postService.update).not.toHaveBeenCalled();

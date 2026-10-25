@@ -45,11 +45,7 @@ async function authenticate(req: Request, next: NextFunction, optional: boolean)
 
         next();
     } catch (err) {
-        next(
-            err instanceof AppError
-                ? err
-                : new UnauthorisedError("Invalid or expired token."),
-        );
+        next(err instanceof AppError ? err : new UnauthorisedError("Invalid or expired token."));
     }
 }
 

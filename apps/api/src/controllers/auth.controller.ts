@@ -1,22 +1,16 @@
 import type { Request, Response } from "express";
 import type { ValidatedLocals } from "../middleware/validate-request.js";
-import type {
-    registerBodySchema,
-    loginBodySchema,
-} from "../schemas/auth.schema.js";
+import type { registerBodySchema, loginBodySchema } from "../schemas/auth.schema.js";
 import type {
     RefreshTokenLocals,
-    OptionalRefreshTokenLocals
+    OptionalRefreshTokenLocals,
 } from "../middleware/require-refresh-token.js";
 import * as authService from "../services/auth.service.js";
 import { UnauthorisedError } from "../errors/app-error.js";
 
 export async function register(
     _req: Request,
-    res: Response<
-        unknown,
-        ValidatedLocals<{ body: typeof registerBodySchema }>
-    >,
+    res: Response<unknown, ValidatedLocals<{ body: typeof registerBodySchema }>>,
 ) {
     const body = res.locals.validated.body;
     const user = await authService.register(body);
@@ -43,10 +37,7 @@ export async function login(
     return res.status(200).json(responseBody);
 }
 
-export async function logout(
-    _req: Request,
-    res: Response<unknown, OptionalRefreshTokenLocals>,
-) {
+export async function logout(_req: Request, res: Response<unknown, OptionalRefreshTokenLocals>) {
     await authService.logout(res.locals.refreshToken);
 
     res.clearCookie("__Secure-refresh", {
@@ -59,10 +50,7 @@ export async function logout(
     return res.sendStatus(204);
 }
 
-export async function refresh(
-    _req: Request,
-    res: Response<unknown, RefreshTokenLocals>,
-) {
+export async function refresh(_req: Request, res: Response<unknown, RefreshTokenLocals>) {
     const result = await authService.refresh(res.locals.refreshToken);
 
     const { refreshToken, ...responseBody } = result;
@@ -78,19 +66,13 @@ export async function refresh(
     return res.status(200).json(responseBody);
 }
 
-export async function csrf(
-    _req: Request,
-    res: Response<unknown, RefreshTokenLocals>,
-) {
+export async function csrf(_req: Request, res: Response<unknown, RefreshTokenLocals>) {
     const body = await authService.csrf(res.locals.refreshToken);
     res.set("Cache-Control", "no-store");
     return res.status(200).json(body);
 }
 
-export async function me(
-    req: Request,
-    res: Response,
-) {
+export async function me(req: Request, res: Response) {
     if (!req.user) {
         throw new UnauthorisedError("Invalid or expired token.");
     }

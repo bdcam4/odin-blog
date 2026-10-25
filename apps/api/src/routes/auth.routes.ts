@@ -1,16 +1,13 @@
 import { Router } from "express";
 import { validateRequest } from "../middleware/validate-request.js";
-import {
-    registerBodySchema,
-    loginBodySchema,
-} from "../schemas/auth.schema.js";
+import { registerBodySchema, loginBodySchema } from "../schemas/auth.schema.js";
 import * as authController from "../controllers/auth.controller.js";
 import { optionalRefreshToken, requireRefreshToken } from "../middleware/require-refresh-token.js";
 import {
     registerLimiter,
     loginLimiter,
     refreshLimiter,
-    csrfLimiter
+    csrfLimiter,
 } from "../middleware/rate-limit.js";
 import {
     requireAllowedOrigin,
@@ -61,10 +58,6 @@ authRoutes.get(
     authController.csrf,
 );
 
-authRoutes.get(
-    "/me",
-    requireAuth,
-    authController.me,
-);
+authRoutes.get("/me", requireAuth, authController.me);
 
 export default authRoutes;

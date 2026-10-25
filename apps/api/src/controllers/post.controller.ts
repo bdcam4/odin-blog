@@ -54,7 +54,10 @@ export async function create(
 
 export async function update(
     req: Request,
-    res: Response<unknown, ValidatedLocals<{ params: typeof postIdParamsSchema; body: typeof updatePostBodySchema; }>>,
+    res: Response<
+        unknown,
+        ValidatedLocals<{ params: typeof postIdParamsSchema; body: typeof updatePostBodySchema }>
+    >,
 ) {
     const user = req.user;
     if (!user) {

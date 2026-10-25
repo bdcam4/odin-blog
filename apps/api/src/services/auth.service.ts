@@ -50,10 +50,7 @@ export async function register(body: RegisterInput) {
             },
         });
     } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === "P2002"
-        ) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
             throw new ConflictError("Email is already registered.");
         }
         throw error;
@@ -106,9 +103,7 @@ export async function login(body: LoginInput) {
 
 export async function logout(refreshToken?: string) {
     if (refreshToken) {
-        const refreshTokenHash = createHash("sha256")
-        .update(refreshToken)
-        .digest("hex");
+        const refreshTokenHash = createHash("sha256").update(refreshToken).digest("hex");
         await prisma.session.deleteMany({
             where: { refreshTokenHash },
         });
@@ -119,9 +114,7 @@ export async function refresh(refreshToken: string) {
     const now = new Date();
 
     const newRefreshToken = createRefreshToken();
-    const refreshTokenHash = createHash("sha256")
-    .update(refreshToken)
-    .digest("hex");
+    const refreshTokenHash = createHash("sha256").update(refreshToken).digest("hex");
 
     const [session] = await prisma.session.updateManyAndReturn({
         where: {
@@ -131,7 +124,7 @@ export async function refresh(refreshToken: string) {
         data: {
             refreshTokenHash: newRefreshToken.tokenHash,
         },
-        include: { user: true }
+        include: { user: true },
     });
 
     if (!session) {
@@ -157,9 +150,7 @@ export async function refresh(refreshToken: string) {
 
 export async function csrf(refreshToken: string) {
     const now = new Date();
-    const refreshTokenHash = createHash("sha256")
-    .update(refreshToken)
-    .digest("hex");
+    const refreshTokenHash = createHash("sha256").update(refreshToken).digest("hex");
 
     const session = await prisma.session.findUnique({
         where: {
@@ -194,6 +185,6 @@ export async function getCurrentUser(id: number) {
             email: user.email,
             name: user.name,
             isAdmin: user.isAdmin,
-        }
+        },
     };
 }

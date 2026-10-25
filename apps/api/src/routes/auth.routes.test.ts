@@ -53,9 +53,7 @@ describe("auth routes", () => {
                 email: "reader@example.com",
             } as never);
 
-            const response = await request(app)
-                .post("/api/auth/register")
-                .send(credentials);
+            const response = await request(app).post("/api/auth/register").send(credentials);
 
             expect(response.status).toBe(201);
             expect(response.body).toEqual({
@@ -79,9 +77,7 @@ describe("auth routes", () => {
                 new ConflictError("Email is already registered."),
             );
 
-            const response = await request(app)
-                .post("/api/auth/register")
-                .send(credentials);
+            const response = await request(app).post("/api/auth/register").send(credentials);
 
             expect(response.status).toBe(409);
             expect(response.body.code).toBe("CONFLICT");
@@ -100,8 +96,7 @@ describe("auth routes", () => {
                 expiresIn: "15m",
             } as never);
 
-            const response = await withAuthOrigin("post", "/api/auth/login")
-                .send(credentials);
+            const response = await withAuthOrigin("post", "/api/auth/login").send(credentials);
 
             expect(response.status).toBe(200);
             expect(response.body).toEqual({
@@ -135,8 +130,10 @@ describe("auth routes", () => {
         });
 
         it("rejects invalid credentials input before calling the service", async () => {
-            const response = await withAuthOrigin("post", "/api/auth/login")
-                .send({ email: "bad-email", password: "short" });
+            const response = await withAuthOrigin("post", "/api/auth/login").send({
+                email: "bad-email",
+                password: "short",
+            });
 
             expect(response.status).toBe(400);
             expect(authService.login).not.toHaveBeenCalled();
@@ -147,8 +144,7 @@ describe("auth routes", () => {
                 new UnauthorisedError("Invalid email or password."),
             );
 
-            const response = await withAuthOrigin("post", "/api/auth/login")
-                .send(credentials);
+            const response = await withAuthOrigin("post", "/api/auth/login").send(credentials);
 
             expect(response.status).toBe(401);
             expect(response.headers["set-cookie"]).toBeUndefined();
@@ -173,8 +169,10 @@ describe("auth routes", () => {
         it("requires the matching CSRF token when a session exists", async () => {
             mockActiveSession();
 
-            const response = await withAuthOrigin("post", "/api/auth/logout")
-                .set("Cookie", `__Secure-refresh=${refreshToken}`);
+            const response = await withAuthOrigin("post", "/api/auth/logout").set(
+                "Cookie",
+                `__Secure-refresh=${refreshToken}`,
+            );
 
             expect(response.status).toBe(403);
             expect(authService.logout).not.toHaveBeenCalled();
@@ -214,8 +212,10 @@ describe("auth routes", () => {
         it("requires a valid CSRF token for the refresh cookie", async () => {
             mockActiveSession();
 
-            const response = await withAuthOrigin("post", "/api/auth/refresh")
-                .set("Cookie", `__Secure-refresh=${refreshToken}`);
+            const response = await withAuthOrigin("post", "/api/auth/refresh").set(
+                "Cookie",
+                `__Secure-refresh=${refreshToken}`,
+            );
 
             expect(response.status).toBe(403);
             expect(authService.refresh).not.toHaveBeenCalled();
@@ -258,8 +258,10 @@ describe("auth routes", () => {
         it("returns the session CSRF token without allowing caches to store it", async () => {
             vi.mocked(authService.csrf).mockResolvedValue({ csrfToken } as never);
 
-            const response = await withAuthOrigin("get", "/api/auth/csrf")
-                .set("Cookie", `__Secure-refresh=${refreshToken}`);
+            const response = await withAuthOrigin("get", "/api/auth/csrf").set(
+                "Cookie",
+                `__Secure-refresh=${refreshToken}`,
+            );
 
             expect(response.status).toBe(200);
             expect(response.body).toEqual({ csrfToken });

@@ -1,9 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { UnauthorisedError } from "../errors/app-error.js";
-import {
-    refreshCookieSchema,
-    optionalCookieSchema
-} from "../schemas/auth.schema.js";
+import { refreshCookieSchema, optionalCookieSchema } from "../schemas/auth.schema.js";
 
 export type RefreshTokenLocals = {
     refreshToken: string;
@@ -39,9 +36,7 @@ export function optionalRefreshToken(
         refreshToken: req.cookies?.["__Secure-refresh"],
     });
 
-    res.locals.refreshToken = result.success
-        ? result.data.refreshToken
-        : undefined;
+    res.locals.refreshToken = result.success ? result.data.refreshToken : undefined;
 
     next();
 }
