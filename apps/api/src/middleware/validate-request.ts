@@ -60,7 +60,7 @@ function formatIssues(error: z.ZodError) {
  * @returns Express middleware that validates the request and populates `res.locals.validated`
  */
 export function validateRequest<TSchemas extends RequestSchemas>(schema: TSchemas) {
-    return (req: Request, res: Response<any, ValidatedLocals<TSchemas>>, next: NextFunction) => {
+    return (req: Request, res: Response<unknown, ValidatedLocals<TSchemas>>, next: NextFunction) => {
         // Start with an empty validated object and fill in each section only if that schema exists.
         const validated = {
             params: undefined,
