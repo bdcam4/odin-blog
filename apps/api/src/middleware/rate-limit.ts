@@ -4,6 +4,7 @@ import { PROBLEM_TYPE_BASE } from "../errors/app-error.js";
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 const ONE_HOUR = 60 * 60 * 1000;
 
+/** Creates a rate limiter with a consistent problem-details response. */
 function createLimiter(windowMs: number, limit: number) {
     return rateLimit({
         windowMs,

@@ -15,6 +15,10 @@ import type {
 import * as postService from "../services/post.service.js";
 import { UnauthorisedError } from "../errors/app-error.js";
 
+/**
+ * Returns a paginated list using the validated query; draft visibility follows
+ * the caller's access.
+ */
 export async function list(
     req: Request,
     res: Response<unknown, ValidatedLocals<{ query: typeof listPostsQuerySchema }>>,
@@ -25,6 +29,7 @@ export async function list(
     return res.status(200).json(result);
 }
 
+/** Returns the post matching the validated slug if it is visible to the caller. */
 export async function getBySlug(
     req: Request,
     res: Response<unknown, ValidatedLocals<{ params: typeof postSlugParamsSchema }>>,
@@ -36,6 +41,7 @@ export async function getBySlug(
     return res.status(200).json(result);
 }
 
+/** Creates a post for the authenticated user and returns its resource location. */
 export async function create(
     req: Request,
     res: Response<unknown, ValidatedLocals<{ body: typeof createPostBodySchema }>>,
@@ -52,6 +58,10 @@ export async function create(
     return res.status(201).json({ post: result });
 }
 
+/**
+ * Applies the validated partial update; authors may edit their own posts and
+ * admins may edit any post.
+ */
 export async function update(
     req: Request,
     res: Response<
@@ -72,6 +82,7 @@ export async function update(
     return res.status(200).json({ post: result });
 }
 
+/** Deletes the caller's post (or any post for an admin) and responds with 204. */
 export async function remove(
     req: Request,
     res: Response<unknown, ValidatedLocals<{ params: typeof postIdParamsSchema }>>,

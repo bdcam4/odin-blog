@@ -30,12 +30,17 @@ async function signAccessToken(user: AuthUser, sid: string) {
         .sign(new TextEncoder().encode(env.JWT_ACCESS_SECRET));
 }
 
+/** Returns the raw token for the client and its digest for database storage. */
 function createRefreshToken() {
     const token = randomBytes(32).toString("base64url");
     const tokenHash = createHash("sha256").update(token).digest("hex");
     return { token, tokenHash };
 }
 
+/**
+ * Normalizes the email, hashes the password, and creates the account. Duplicate
+ * emails are reported as conflicts.
+ */
 export async function register(body: RegisterInput) {
     const email = body.email.toLowerCase();
     const passwordHash = await hash(body.password, {
@@ -57,6 +62,7 @@ export async function register(body: RegisterInput) {
     }
 }
 
+/** Verifies credentials and creates a session with access, refresh, and CSRF tokens. */
 export async function login(body: LoginInput) {
     const email = body.email.toLowerCase();
     const user = await prisma.user.findUnique({ where: { email } });
@@ -101,6 +107,7 @@ export async function login(body: LoginInput) {
     };
 }
 
+/** Removes the session associated with the refresh token; does nothing if none is supplied. */
 export async function logout(refreshToken?: string) {
     if (refreshToken) {
         const refreshTokenHash = createHash("sha256").update(refreshToken).digest("hex");
@@ -110,6 +117,7 @@ export async function logout(refreshToken?: string) {
     }
 }
 
+/** Replaces a live session's refresh-token hash and issues new access credentials. */
 export async function refresh(refreshToken: string) {
     const now = new Date();
 
@@ -148,6 +156,7 @@ export async function refresh(refreshToken: string) {
     };
 }
 
+/** Retrieves the CSRF token for a live refresh-token session or rejects an invalid token. */
 export async function csrf(refreshToken: string) {
     const now = new Date();
     const refreshTokenHash = createHash("sha256").update(refreshToken).digest("hex");
@@ -168,6 +177,7 @@ export async function csrf(refreshToken: string) {
     };
 }
 
+/** Loads the user's public profile by ID, rejecting requests for a missing account. */
 export async function getCurrentUser(id: number) {
     const user = await prisma.user.findUnique({
         where: {

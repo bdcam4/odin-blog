@@ -13,6 +13,10 @@ declare global {
     }
 }
 
+/**
+ * Verifies a bearer token and attaches its user to the request. In optional mode,
+ * a missing header is allowed, but an invalid token is still rejected.
+ */
 async function authenticate(req: Request, next: NextFunction, optional: boolean) {
     try {
         const header = req.headers.authorization;
@@ -53,6 +57,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
     return authenticate(req, next, false);
 }
 
+/** Allows requests without a bearer token, but validates any token that is supplied. */
 export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
     return authenticate(req, next, true);
 }

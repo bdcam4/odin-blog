@@ -19,10 +19,12 @@ export function requireAllowedOrigin(req: Request, _res: Response, next: NextFun
     next();
 }
 
+/** Creates a cryptographically random CSRF token for associating with a session. */
 export function createCsrfToken() {
     return randomBytes(32).toString("hex");
 }
 
+/** Requires a live refresh-token session and a matching `X-CSRF-Token` header. */
 export async function requireCsrf(req: Request, res: Response, next: NextFunction) {
     const now = new Date();
     const refreshToken = res.locals.refreshToken;
@@ -47,6 +49,7 @@ export async function requireCsrf(req: Request, res: Response, next: NextFunctio
     next();
 }
 
+/** Requires a matching CSRF header only when the refresh token identifies a live session. */
 export async function requireCsrfIfSessionExists(req: Request, res: Response, next: NextFunction) {
     const now = new Date();
 

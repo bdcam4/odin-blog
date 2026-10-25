@@ -8,6 +8,7 @@ import type {
 import * as authService from "../services/auth.service.js";
 import { UnauthorisedError } from "../errors/app-error.js";
 
+/** Creates an account from validated credentials and returns only public user fields. */
 export async function register(
     _req: Request,
     res: Response<unknown, ValidatedLocals<{ body: typeof registerBodySchema }>>,
@@ -17,6 +18,10 @@ export async function register(
     return res.status(201).json({ user: { id: user.id, email: user.email } });
 }
 
+/**
+ * Authenticates credentials and sets the refresh token as an HTTP-only cookie,
+ * omitting it from the JSON body.
+ */
 export async function login(
     _req: Request,
     res: Response<unknown, ValidatedLocals<{ body: typeof loginBodySchema }>>,
@@ -37,6 +42,7 @@ export async function login(
     return res.status(200).json(responseBody);
 }
 
+/** Ends the session when a refresh token is present, clears the cookie, and returns 204. */
 export async function logout(_req: Request, res: Response<unknown, OptionalRefreshTokenLocals>) {
     await authService.logout(res.locals.refreshToken);
 
@@ -50,6 +56,10 @@ export async function logout(_req: Request, res: Response<unknown, OptionalRefre
     return res.sendStatus(204);
 }
 
+/**
+ * Rotates the session's refresh token, sets its replacement cookie, and returns
+ * fresh access credentials.
+ */
 export async function refresh(_req: Request, res: Response<unknown, RefreshTokenLocals>) {
     const result = await authService.refresh(res.locals.refreshToken);
 
@@ -66,12 +76,14 @@ export async function refresh(_req: Request, res: Response<unknown, RefreshToken
     return res.status(200).json(responseBody);
 }
 
+/** Returns the current session's CSRF token with caching disabled. */
 export async function csrf(_req: Request, res: Response<unknown, RefreshTokenLocals>) {
     const body = await authService.csrf(res.locals.refreshToken);
     res.set("Cache-Control", "no-store");
     return res.status(200).json(body);
 }
 
+/** Loads the profile for the authenticated user; rejects the request if the account no longer exists. */
 export async function me(req: Request, res: Response) {
     if (!req.user) {
         throw new UnauthorisedError("Invalid or expired token.");

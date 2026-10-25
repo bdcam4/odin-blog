@@ -2,17 +2,8 @@ import type { NextFunction, Request, Response } from "express";
 import { AppError, PROBLEM_TYPE_BASE, type ProblemDetails } from "../errors/app-error.js";
 
 /**
- * Terminal Express error middleware: converts any failure into an
- * RFC 9457 problem details response.
- *
- * Must keep the 4-parameter signature — Express identifies error
- * middleware by arity, so `_next` exists only to preserve it.
- * Runs when something above it calls `next(error)` or throws.
- *
- * @param err - The thrown/rejected value. Typed `unknown` because
- *   JavaScript can throw anything.
- * @param _next - Unused; present for arity. Forwards `err` if
- *   headers were already sent.
+ * Converts failures into RFC 9457 problem-details responses. If headers are sent,
+ * forwards the error; the four-argument signature identifies Express error middleware.
  */
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
     // A response already started streaming; it cannot be replaced.

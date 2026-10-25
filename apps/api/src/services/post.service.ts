@@ -4,6 +4,10 @@ import { ConflictError, NotFoundError, UnauthorisedError } from "../errors/app-e
 import type { CreatePostBody, ListPostsQuery, UpdatePostBody } from "../schemas/post.schema.ts";
 import type { AuthUser } from "../types.js";
 
+/**
+ * Lists posts with pagination metadata. Anonymous callers see published posts;
+ * owners and admins may include drafts.
+ */
 export async function list(query: ListPostsQuery, user?: AuthUser) {
     const { page, limit, includeDrafts } = query;
     const skip = (page - 1) * limit;
@@ -41,6 +45,10 @@ export async function list(query: ListPostsQuery, user?: AuthUser) {
     return { posts, pagination: { page, limit, hasNextPage } };
 }
 
+/**
+ * Finds a post by slug. Drafts are visible only to their owner or an admin;
+ * published posts are public.
+ */
 export async function getBySlug(slug: string, user?: AuthUser) {
     const where: Prisma.PostWhereInput = {
         slug,
@@ -79,6 +87,7 @@ export async function getBySlug(slug: string, user?: AuthUser) {
     return { post };
 }
 
+/** Creates a post for its author, retrying with numeric slug suffixes when needed. */
 export async function create(body: CreatePostBody, user: AuthUser) {
     const baseSlug = slugify(body.title);
 
@@ -117,6 +126,7 @@ export async function create(body: CreatePostBody, user: AuthUser) {
     throw new ConflictError("Could not generate a unique post slug.");
 }
 
+/** Updates only supplied fields; authors may update their own posts and admins any post. */
 export async function update(id: number, body: UpdatePostBody, user: AuthUser) {
     const where = user.isAdmin ? { id } : { id, authorId: user.id };
 
@@ -148,6 +158,7 @@ export async function update(id: number, body: UpdatePostBody, user: AuthUser) {
     }
 }
 
+/** Deletes the author's post or any post for an admin; inaccessible posts appear not found. */
 export async function remove(id: number, user: AuthUser): Promise<void> {
     const where = user.isAdmin ? { id } : { id, authorId: user.id };
 
@@ -158,6 +169,7 @@ export async function remove(id: number, user: AuthUser): Promise<void> {
     }
 }
 
+/** Normalizes a title into a lowercase ASCII slug, using `post` when no characters remain. */
 function slugify(title: string) {
     const slug = title
         .normalize("NFKD")

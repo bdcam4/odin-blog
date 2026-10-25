@@ -10,6 +10,7 @@ export type OptionalRefreshTokenLocals = {
     refreshToken?: string;
 };
 
+/** Requires a valid refresh cookie and stores its token in `res.locals` for downstream handlers. */
 export function requireRefreshToken(
     req: Request,
     res: Response<unknown, RefreshTokenLocals>,
@@ -27,6 +28,7 @@ export function requireRefreshToken(
     next();
 }
 
+/** Stores a valid refresh cookie when present; missing or malformed cookies become `undefined`. */
 export function optionalRefreshToken(
     req: Request,
     res: Response<unknown, OptionalRefreshTokenLocals>,
