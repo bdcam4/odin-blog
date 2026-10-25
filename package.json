@@ -5,8 +5,10 @@
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "format": "prettier --write .",
-        "format:check": "prettier --check ."
+        "format": "biome format --write .",
+        "format:check": "biome format .",
+        "lint": "biome lint .",
+        "lint:fix": "biome lint --write ."
     },
     "keywords": [],
     "author": "",
@@ -20,6 +22,6 @@
     },
     "type": "module",
     "devDependencies": {
-        "prettier": "3.9.6"
+        "@biomejs/biome": "^2.5.15"
     }
 }
