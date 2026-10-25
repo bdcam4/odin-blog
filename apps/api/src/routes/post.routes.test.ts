@@ -8,6 +8,7 @@ vi.mock("../services/post.service.js", () => ({
     list: vi.fn(),
     create: vi.fn(),
     getBySlug: vi.fn(),
+    update: vi.fn(),
     remove: vi.fn(),
 }));
 
@@ -200,5 +201,99 @@ describe("DELETE /api/posts/:id", () => {
 
         expect(response.status).toBe(400);
         expect(postService.remove).not.toHaveBeenCalled();
+    });
+});
+
+describe("PATCH /api/posts/:id", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    async function createAccessToken() {
+        return new jose.SignJWT({
+            email: "owner@example.com",
+            isAdmin: false,
+            typ: "access",
+            sid: "97c0a3d1-e945-46da-b6be-f888b7e10ec2",
+        })
+            .setProtectedHeader({ alg: "HS256" })
+            .setSubject("7")
+            .setIssuedAt()
+            .setExpirationTime("5m")
+            .sign(new TextEncoder().encode(process.env.JWT_ACCESS_SECRET));
+    }
+
+    it("requires authentication", async () => {
+        const response = await request(app)
+            .patch("/api/posts/42")
+            .send({ title: "Updated title" });
+
+        expect(response.status).toBe(401);
+        expect(postService.update).not.toHaveBeenCalled();
+    });
+
+    it("updates a post and returns it with 200", async () => {
+        const token = await createAccessToken();
+        const post = {
+            id: 42,
+            slug: "my-post",
+            title: "Updated title",
+            body: "Post body",
+        };
+        vi.mocked(postService.update).mockResolvedValue(post as never);
+
+        const response = await request(app)
+            .patch("/api/posts/42")
+            .set("Authorization", `Bearer ${token}`)
+            .send({ title: "Updated title" });
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ post });
+        expect(postService.update).toHaveBeenCalledWith(
+            42,
+            { title: "Updated title" },
+            { id: 7, email: "owner@example.com", isAdmin: false },
+        );
+    });
+
+    it("allows an authorized user to change the published status", async () => {
+        const token = await createAccessToken();
+        const post = { id: 42, slug: "my-post", published: true };
+        vi.mocked(postService.update).mockResolvedValue(post as never);
+
+        const response = await request(app)
+            .patch("/api/posts/42")
+            .set("Authorization", `Bearer ${token}`)
+            .send({ published: true });
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ post });
+        expect(postService.update).toHaveBeenCalledWith(
+            42,
+            { published: true },
+            { id: 7, email: "owner@example.com", isAdmin: false },
+        );
+    });
+
+    it("rejects invalid IDs and empty update bodies before calling the service", async () => {
+        const token = await createAccessToken();
+
+        const invalidIdResponse = await request(app)
+            .patch("/api/posts/not-an-id")
+            .set("Authorization", `Bearer ${token}`)
+            .send({ title: "Updated title" });
+        const emptyBodyResponse = await request(app)
+            .patch("/api/posts/42")
+            .set("Authorization", `Bearer ${token}`)
+            .send({});
+        const invalidPublishedResponse = await request(app)
+            .patch("/api/posts/42")
+            .set("Authorization", `Bearer ${token}`)
+            .send({ published: "true" });
+
+        expect(invalidIdResponse.status).toBe(400);
+        expect(emptyBodyResponse.status).toBe(400);
+        expect(invalidPublishedResponse.status).toBe(400);
+        expect(postService.update).not.toHaveBeenCalled();
     });
 });

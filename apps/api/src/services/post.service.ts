@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { Prisma } from "../generated/prisma/client.js";
 import { ConflictError, NotFoundError, UnauthorisedError } from "../errors/app-error.js";
-import type { CreatePostBody, ListPostsQuery } from "../schemas/post.schema.ts";
+import type { CreatePostBody, ListPostsQuery, UpdatePostBody } from "../schemas/post.schema.ts";
 import type { AuthUser } from "../types.js";
 
 export async function list(query: ListPostsQuery, user?: AuthUser) {
@@ -122,11 +122,46 @@ export async function create(body: CreatePostBody, user: AuthUser) {
             }
         }
     }
-
     throw new ConflictError("Could not generate a unique post slug.");
 }
 
-export async function remove(id: number, user: AuthUser) {
+export async function update(id: number, body: UpdatePostBody, user: AuthUser) {
+    const where = user.isAdmin
+        ? { id }
+        : { id, authorId: user.id };
+
+    try {
+        return await prisma.post.update({
+            where,
+            data: body,
+            select: {
+                id: true,
+                slug: true,
+                title: true,
+                body: true,
+                published: true,
+                createdAt: true,
+                updatedAt: true,
+                author: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            }
+        });
+    } catch (error) {
+        if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === "P2025"
+        ) {
+            throw new NotFoundError("Post not found.");
+        }
+        throw error;
+    }
+}
+
+export async function remove(id: number, user: AuthUser): Promise<void> {
     const where = user.isAdmin
         ? { id }
         : { id, authorId: user.id };

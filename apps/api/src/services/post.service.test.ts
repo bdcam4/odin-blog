@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Prisma } from "../generated/prisma/client.js";
 import { NotFoundError, UnauthorisedError } from "../errors/app-error.js";
 import { prisma } from "../lib/prisma.js";
 import type { AuthUser } from "../types.js";
-import { create, getBySlug, list, remove } from "./post.service.js";
+import { create, getBySlug, list, remove, update } from "./post.service.js";
 
 vi.mock("../lib/prisma.js", () => ({
     prisma: {
@@ -10,6 +11,7 @@ vi.mock("../lib/prisma.js", () => ({
             findMany: vi.fn(),
             findFirst: vi.fn(),
             create: vi.fn(),
+            update: vi.fn(),
             deleteMany: vi.fn(),
         },
     },
@@ -55,6 +57,16 @@ describe("listPosts", () => {
             createdAt: new Date("2026-01-01T00:00:00.000Z"),
         } as never);
         vi.mocked(prisma.post.deleteMany).mockResolvedValue({ count: 1 });
+        vi.mocked(prisma.post.update).mockResolvedValue({
+            id: 42,
+            slug: "test-post",
+            title: "Updated title",
+            body: "Updated body",
+            published: false,
+            createdAt: new Date("2026-01-01T00:00:00.000Z"),
+            updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+            author: { id: owner.id, name: "Owner" },
+        } as never);
     });
 
     it("returns published posts to anonymous callers by default", async () => {
@@ -173,6 +185,50 @@ describe("listPosts", () => {
         vi.mocked(prisma.post.findFirst).mockResolvedValue(null);
 
         await expect(getBySlug("private-draft")).rejects.toBeInstanceOf(
+            NotFoundError,
+        );
+    });
+
+    it("updates only supplied fields on the owner's post", async () => {
+        const result = await update(42, { title: "Updated title" }, owner);
+
+        expect(prisma.post.update).toHaveBeenCalledWith({
+            where: { id: 42, authorId: owner.id },
+            data: { title: "Updated title" },
+            select: {
+                id: true,
+                slug: true,
+                title: true,
+                body: true,
+                published: true,
+                createdAt: true,
+                updatedAt: true,
+                author: { select: { id: true, name: true } },
+            },
+        });
+        expect(result).toMatchObject({ id: 42, title: "Updated title" });
+    });
+
+    it("allows admins to update any post", async () => {
+        await update(42, { published: true }, admin);
+
+        expect(prisma.post.update).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: { id: 42 },
+                data: { published: true },
+            }),
+        );
+    });
+
+    it("maps Prisma P2025 to not found for missing or unowned posts", async () => {
+        vi.mocked(prisma.post.update).mockRejectedValue(
+            new Prisma.PrismaClientKnownRequestError("Record not found", {
+                code: "P2025",
+                clientVersion: "test",
+            }),
+        );
+
+        await expect(update(42, { title: "Updated title" }, owner)).rejects.toBeInstanceOf(
             NotFoundError,
         );
     });

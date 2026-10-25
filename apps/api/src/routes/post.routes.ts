@@ -5,6 +5,7 @@ import {
     listPostsQuerySchema,
     postSlugParamsSchema,
     postIdParamsSchema,
+    updatePostBodySchema,
 } from "../schemas/post.schema.js";
 import { optionalAuth, requireAuth } from "../middleware/authenticate.js";
 import * as postController from "../controllers/post.controller.js";
@@ -39,6 +40,19 @@ postRoutes.post(
     requireAuth,
     validateRequest({ body: createPostBodySchema }),
     postController.create,
+);
+
+/**
+ * PATCH /api/posts/:id
+ */
+postRoutes.patch(
+    "/:id",
+    requireAuth,
+    validateRequest({
+        params: postIdParamsSchema,
+        body: updatePostBodySchema,
+    }),
+    postController.update,
 );
 
 /**
