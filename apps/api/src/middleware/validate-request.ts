@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import * as z from "zod";
+import type * as z from "zod";
 import { ValidationError } from "../errors/app-error.js";
 
 type RequestSchemas = {

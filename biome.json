@@ -6,6 +6,6 @@
         "lineWidth": 100
     },
     "files": {
-        "includes": ["**", "!apps/api/src/generated/prisma/**"]
+        "includes": ["**", "!apps/api/src/generated/prisma"]
     }
 }

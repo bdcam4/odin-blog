@@ -1,16 +1,16 @@
 import type { Request, Response } from "express";
 import type { ValidatedLocals } from "../middleware/validate-request.js";
-import {
+import type {
     createPostBodySchema,
     listPostsQuerySchema,
     postSlugParamsSchema,
     postIdParamsSchema,
     updatePostBodySchema,
-    type CreatePostBody,
-    type ListPostsQuery,
-    type PostSlugParams,
-    type PostIdParams,
-    type UpdatePostBody,
+    CreatePostBody,
+    ListPostsQuery,
+    PostSlugParams,
+    PostIdParams,
+    UpdatePostBody,
 } from "../schemas/post.schema.ts";
 import * as postService from "../services/post.service.js";
 import { UnauthorisedError } from "../errors/app-error.js";
