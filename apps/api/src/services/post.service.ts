@@ -1,6 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { Prisma } from "../generated/prisma/client.js";
-import { ConflictError, UnauthorisedError } from "../errors/app-error.js";
+import { ConflictError, NotFoundError, UnauthorisedError } from "../errors/app-error.js";
 import type { CreatePostBody, ListPostsQuery } from "../schemas/post.schema.ts";
 import type { AuthUser } from "../types.js";
 
@@ -45,6 +45,48 @@ export async function list(query: ListPostsQuery, user?: AuthUser) {
     return { posts, pagination: { page, limit, hasNextPage } };
 }
 
+export async function getBySlug(slug: string, user?: AuthUser) {
+    const where: Prisma.PostWhereInput = {
+        slug,
+        ...(user?.isAdmin
+            ? {}
+            : user
+                ? {
+                    OR: [
+                        { published: true },
+                        { published: false, authorId: user.id },
+                    ],
+                }
+                : { published: true }
+        )
+    };
+
+    const post = await prisma.post.findFirst({
+        where,
+        select: {
+            id: true,
+            slug: true,
+            title: true,
+            body: true,
+            published: true,
+            createdAt: true,
+            updatedAt: true,
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                },
+            },
+        }
+    });
+
+    if (!post) {
+        throw new NotFoundError("Post not found.");
+    }
+
+    return { post };
+}
+
 export async function create(body: CreatePostBody, user: AuthUser) {
     const baseSlug = slugify(body.title);
 
@@ -82,6 +124,18 @@ export async function create(body: CreatePostBody, user: AuthUser) {
     }
 
     throw new ConflictError("Could not generate a unique post slug.");
+}
+
+export async function remove(id: number, user: AuthUser) {
+    const where = user.isAdmin
+        ? { id }
+        : { id, authorId: user.id };
+
+    const result = await prisma.post.deleteMany({ where });
+
+    if (result.count === 0) {
+        throw new NotFoundError("Post not found.");
+    }
 }
 
 function slugify(title: string) {

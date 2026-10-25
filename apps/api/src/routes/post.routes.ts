@@ -3,6 +3,8 @@ import { validateRequest } from "../middleware/validate-request.js";
 import {
     createPostBodySchema,
     listPostsQuerySchema,
+    postSlugParamsSchema,
+    postIdParamsSchema,
 } from "../schemas/post.schema.js";
 import { optionalAuth, requireAuth } from "../middleware/authenticate.js";
 import * as postController from "../controllers/post.controller.js";
@@ -20,6 +22,16 @@ postRoutes.get(
 );
 
 /**
+ * GET /api/posts/:slug
+ */
+postRoutes.get(
+    "/:slug",
+    optionalAuth,
+    validateRequest({ params: postSlugParamsSchema }),
+    postController.getBySlug,
+);
+
+/**
  * POST /api/posts
  */
 postRoutes.post(
@@ -27,6 +39,16 @@ postRoutes.post(
     requireAuth,
     validateRequest({ body: createPostBodySchema }),
     postController.create,
+);
+
+/**
+ * DELETE /api/posts/:id
+ */
+postRoutes.delete(
+    "/:id",
+    requireAuth,
+    validateRequest({ params: postIdParamsSchema }),
+    postController.remove,
 );
 
 export default postRoutes;
